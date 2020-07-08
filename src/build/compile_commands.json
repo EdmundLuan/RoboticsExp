@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/Users/Edmonds/run/RoboticsExp/src/build",
+  "command": "/usr/bin/clang++    -g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk   -std=gnu++11 -o CMakeFiles/PalletizerX.dir/main.cpp.o -c /Users/Edmonds/run/RoboticsExp/src/main.cpp",
+  "file": "/Users/Edmonds/run/RoboticsExp/src/main.cpp"
+}
+]
