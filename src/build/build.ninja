@@ -64,6 +64,7 @@ build cmake_object_order_depends_target_PalletizerX: phony || CMakeFiles/Palleti
 build CMakeFiles/PalletizerX.dir/main.cpp.o: CXX_COMPILER__PalletizerX ../main.cpp || cmake_object_order_depends_target_PalletizerX
   DEP_FILE = CMakeFiles/PalletizerX.dir/main.cpp.o.d
   FLAGS = -g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk   -std=gnu++11
+  INCLUDES = -I../includes -I../, -I../oldIncludes -I../Poco -I../eigen3 -I../QKMLink
   OBJECT_DIR = CMakeFiles/PalletizerX.dir
   OBJECT_FILE_DIR = CMakeFiles/PalletizerX.dir
 

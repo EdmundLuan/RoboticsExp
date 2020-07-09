@@ -38,6 +38,7 @@
 #include "stfslry.hpp"
 #include "stfcont.hpp"
 
+//#include "HLrobotconfig.h"
 /*================================= CONSTANT ==============================================*/
 
 // Commands and description for main
