@@ -1,7 +1,7 @@
 [
 {
-  "directory": "/Users/Edmonds/run/RoboticsExp/src/build",
-  "command": "/usr/bin/clang++   -I../includes -I../, -I../oldIncludes -I../Poco -I../eigen3 -I../QKMLink  -g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk   -std=gnu++11 -o CMakeFiles/PalletizerX.dir/main.cpp.o -c /Users/Edmonds/run/RoboticsExp/src/main.cpp",
-  "file": "/Users/Edmonds/run/RoboticsExp/src/main.cpp"
+  "directory": "D:/run/RoboticsExp/src/build",
+  "command": "D:\\ProgramFiles\\TDM-GCC\\bin\\g++.exe  @CMakeFiles/PalletizerX.dir/includes_CXX.rsp -g -std=gnu++11 -o CMakeFiles\\PalletizerX.dir\\main.cpp.obj -c D:\\run\\RoboticsExp\\src\\main.cpp",
+  "file": "D:/run/RoboticsExp/src/main.cpp"
 }
 ]

@@ -10,11 +10,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # head file path，头文件目录
 include_directories(
-#    "includes", 
+    "includes", 
     "oldIncludes",
-#    "Poco",
-    "eigen3",
-#    "QKMLink"
 )
 
 # the executable

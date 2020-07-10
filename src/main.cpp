@@ -17,7 +17,7 @@
 
 
 /*=================================== MACRO ==============================================*/
-#define nENVM_WINDOWS 		// Macro defined when file compiled on WINDOWS platforms
+#define ENVM_WINDOWS 		// Macro defined when file compiled on WINDOWS platforms
 
 /*======================= STANDARD HEADER ====================================*/
 #include <iostream>
@@ -44,10 +44,10 @@
 // Commands and description for main
 // Please Please Please remember to add a comma',' after each pair
 const std::map<std::string, std::string> MainCmd = _map_gen<std::string, std::string>::createMap({
-	{ "info", "Enter Staff Information Manage Subsystem"},
+	// { "info", "Enter Staff Information Manage Subsystem"},
 	{ "prof", "Enter Staff Profile Manage Subsystem"},
-	{ "slry", "Enter Staff Salary Manage Subsystem"},
-	{ "cont", "Enter Staff Contact Manage Subsystem"},
+	// { "slry", "Enter Staff Salary Manage Subsystem"},
+	// { "cont", "Enter Staff Contact Manage Subsystem"},
 	{ "lice", "Print License"},
 	{ "exit", "Exit"},
 	{ "help", "Display this command list again" }
@@ -77,14 +77,14 @@ int main() {
 			break;
 		case "sd"_hash: rec.sd();
 			break;
-		case "info"_hash: infoSub();
-			break;
+		// case "info"_hash: infoSub();
+		// 	break;
 		case "prof"_hash: profSub();
 			break;
-		case "slry"_hash: slrySys.slrySub();
-			break;
-		case "cont"_hash: contSys.contSub();
-			break;
+		// case "slry"_hash: slrySys.slrySub();
+		// 	break;
+		// case "cont"_hash: contSys.contSub();
+		// 	break;
 		case "lice"_hash: prntLcs();
 			break;
 		case "exit"_hash:
@@ -98,9 +98,9 @@ int main() {
 }
 
 inline void prntLcsShrt() {
-	std::cout << "Copyright (C) 2020  Edmund Luan\n\
+	std::cout << "\tCopyright (C) 2020  Edmund Luan\n\
 \tThis program comes with ABSOLUTELY NO WARRANTY.\n\
-\tThis is free software, and you are welcome to redistribute it\
+\tThis is free software, and you are welcome to redistribute it\n\
 \tunder certain conditions; type 'lice' for details." << std::endl;
 }
 

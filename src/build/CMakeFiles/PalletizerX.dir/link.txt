@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\PalletizerX.dir/objects.a
+D:\ProgramFiles\TDM-GCC\bin\ar.exe cr CMakeFiles\PalletizerX.dir/objects.a @CMakeFiles\PalletizerX.dir\objects1.rsp
+D:\ProgramFiles\TDM-GCC\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\PalletizerX.dir/objects.a -Wl,--no-whole-archive -o PalletizerX.exe -Wl,--out-implib,libPalletizerX.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\PalletizerX.dir\linklibs.rsp
