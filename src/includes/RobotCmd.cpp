@@ -1,252 +1,462 @@
 #include <conio.h>
 #include "RobotCmd.h"
-
+#include "MotionPlan.h"
 #include <fstream>
 #include <iostream>
 #include "Poco/Net/FTPClientSession.h"
 #include "Poco/Net/DialogSocket.h"
 #include "Poco/Net/SocketAddress.h"
 #include "Poco/Net/NetException.h"
+#include "PointsCoordinates.h"
+#include "FtpControl.h"
+#pragma comment(lib, "WS2_32.lib")
 
 namespace Robot_Cmd
 {
-	/***********************
-	*
-	*è¯¥éƒ¨åˆ†ä¸ºä¸æœºå™¨äººä¹‹é—´çš„é€šè®¯ï¼Œä¸éœ€è¦æ›´æ”¹
-	*
-	************************/
-	int i = 0;
-	//å®šä¹‰é•¿åº¦å˜é‡
+
+	/*¸Ã²¿·ÖÎªÓë»úÆ÷ÈËÖ®¼äµÄÍ¨Ñ¶£¬²»ĞèÒª¸ü¸Ä*/
+	static int i = 0;
+    static int dataID = 0;
+    static int readDataID = 0;
+	//¶¨Òå³¤¶È±äÁ¿
 	int send_len = 0;
 	int recv_len = 0;
-	//å®šä¹‰å‘é€ç¼“å†²åŒºå’Œæ¥å—ç¼“å†²åŒº
+	//¶¨Òå·¢ËÍ»º³åÇøºÍ½ÓÊÜ»º³åÇø
 	char send_buf[100] = {};
 	char recv_buf[200] = {};
 	string recvstr;
-	//å®šä¹‰æœåŠ¡ç«¯å¥—æ¥å­—ï¼Œæ¥å—è¯·æ±‚å¥—æ¥å­—
+	//¶¨Òå·şÎñ¶ËÌ×½Ó×Ö£¬½ÓÊÜÇëÇóÌ×½Ó×Ö
 	 static SOCKET s_server;
-	//æœåŠ¡ç«¯åœ°å€å®¢æˆ·ç«¯åœ°å€
+	//·şÎñ¶ËµØÖ·¿Í»§¶ËµØÖ·
 	static SOCKADDR_IN server_addr;
-	//åˆå§‹åŒ–
+
+
+    /**************************** Functions **************************/
+	//³õÊ¼»¯
 	void initialization()
 	{
-		//åˆå§‹åŒ–å¥—æ¥å­—åº“
-		WORD w_req = MAKEWORD(2, 2);//ç‰ˆæœ¬å·
+		//³õÊ¼»¯Ì×½Ó×Ö¿â
+		WORD w_req = MAKEWORD(2, 2);//°æ±¾ºÅ
 		WSADATA wsadata;
 		int err;
 		err = WSAStartup(w_req, &wsadata);
 		if (err != 0) {
-			cout << "åˆå§‹åŒ–å¥—æ¥å­—åº“å¤±è´¥ï¼" << endl;
+			cout << "³õÊ¼»¯Ì×½Ó×Ö¿âÊ§°Ü£¡" << endl;
 		}
 		else {
-			cout << "åˆå§‹åŒ–å¥—æ¥å­—åº“æˆåŠŸï¼" << endl;
+			cout << "³õÊ¼»¯Ì×½Ó×Ö¿â³É¹¦£¡" << endl;
 		}
-		//æ£€æµ‹ç‰ˆæœ¬å·
+		//¼ì²â°æ±¾ºÅ
 		if (LOBYTE(wsadata.wVersion) != 2 || HIBYTE(wsadata.wHighVersion) != 2) {
-			cout << "å¥—æ¥å­—åº“ç‰ˆæœ¬å·ä¸ç¬¦ï¼" << endl;
+			cout << "Ì×½Ó×Ö¿â°æ±¾ºÅ²»·û£¡" << endl;
 			WSACleanup();
 		}
 		else {
-			cout << "å¥—æ¥å­—åº“ç‰ˆæœ¬æ­£ç¡®ï¼" << endl;
+			cout << "Ì×½Ó×Ö¿â°æ±¾ÕıÈ·£¡" << endl;
 		}
-		//å¡«å……æœåŠ¡ç«¯åœ°å€ä¿¡æ¯
+		//Ìî³ä·şÎñ¶ËµØÖ·ĞÅÏ¢
 	}
-	//è¿æ¥
+	//Á¬½Ó
 	void Connect()
 	{
-		//å¡«å……æœåŠ¡ç«¯ä¿¡æ¯
+		//Ìî³ä·şÎñ¶ËĞÅÏ¢
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_addr.S_un.S_addr = inet_addr("192.168.10.120");
 		server_addr.sin_port = htons(2090);
-		//åˆ›å»ºå¥—æ¥å­—
+		//´´½¨Ì×½Ó×Ö
 		s_server = socket(AF_INET, SOCK_STREAM, 0);
 		if (connect(s_server, (SOCKADDR *)&server_addr, sizeof(SOCKADDR)) == SOCKET_ERROR) {
-			cout << "æœåŠ¡å™¨è¿æ¥å¤±è´¥ï¼" << endl;
+			cout << "·şÎñÆ÷Á¬½ÓÊ§°Ü£¡" << endl;
 			WSACleanup();
 		}
 		else {
-			cout << "æœåŠ¡å™¨è¿æ¥æˆåŠŸï¼" << endl;
+			cout << "·şÎñÆ÷Á¬½Ó³É¹¦£¡" << endl;
 		}
 	}
-	//ç™»å½•
+	//µÇÂ¼
 	void Login()
 	{
-		sprintf_s(send_buf, 100, "[d%# System.Login 0]", i++);
+		sprintf_s(send_buf, 100, "[%d# System.Login 0]", i++);
 		send_len = send(s_server, send_buf, 100, 0);
 		recv_len = recv(s_server, recv_buf, 100, 0);
 		cout << recv_buf << endl;
 		memset(recv_buf, '\0', sizeof(recv_buf));
-		Sleep(1200);
+		Sleep(200);
 	}
-	//ä¸Šç”µ
+    //¶Ï¿ªÁ¬½Ó
+    void Logout()
+    {
+        sprintf_s(send_buf, 100, "[%d# System.Logout]", i++);
+        send_len = send(s_server, send_buf, 100, 0);
+        recv_len = recv(s_server, recv_buf, 100, 0);
+        cout << recv_buf << endl;
+        memset(recv_buf, '\0', sizeof(recv_buf));
+        Sleep(1000);
+    }
+	//ÉÏµç
 	void PowerOn()
 	{
-		sprintf_s(send_buf, 100, "[d%# Robot.PowerEnable 1,1]", i++);
+		sprintf_s(send_buf, 100, "[%d# Robot.PowerEnable 1,1]", i++);
 		send_len = send(s_server, send_buf, 100, 0);
 		recv_len = recv(s_server, recv_buf, 200, 0);
 		cout << recv_buf << endl;
 		memset(recv_buf, '\0', sizeof(recv_buf));
-		Sleep(1200);
+		Sleep(500);
 	}
-	//åœæ­¢
+	//Í£Ö¹
 	void Abort()
 	{
-		sprintf_s(send_buf, 100, "[d%# System.Abort 1]", i++);
+		sprintf_s(send_buf, 100, "[%d# System.Abort 1]", i++);
 		send_len = send(s_server, send_buf, 100, 0);
 		recv_len = recv(s_server, recv_buf, 100, 0);
 		cout << recv_buf << endl;
 		memset(recv_buf, '\0', sizeof(recv_buf));
-		Sleep(1200);
+		Sleep(200);
 	}
-	//å¯åŠ¨
+	//Æô¶¯
 	void Start()
 	{
-		sprintf_s(send_buf, 100, "[d%# System.Start 1]", i++);
+		sprintf_s(send_buf, 100, "[%d# System.Start 1]", i++);
 		send_len = send(s_server, send_buf, 100, 0);
 		recv_len = recv(s_server, recv_buf, 100, 0);
 		cout << recv_buf << endl;
 		memset(recv_buf, '\0', sizeof(recv_buf));
-		Sleep(1200);
+		Sleep(200);
 	}
-	//å›é›¶
+    //Æô¶¯
+    void Retry()
+    {
+        sprintf_s(send_buf, 100, "[%d# System.Retry 1]", i++);
+        send_len = send(s_server, send_buf, 100, 0);
+        recv_len = recv(s_server, recv_buf, 100, 0);
+        cout << recv_buf << endl;
+        memset(recv_buf, '\0', sizeof(recv_buf));
+        Sleep(200);
+    }
+	//»ØÁã
 	void Home()
 	{
-		sprintf_s(send_buf, 100, "[d%# Robot.Home 1]", i++);
+		sprintf_s(send_buf, 100, "[%d# Robot.Home 1]", i++);
 		send_len = send(s_server, send_buf, 100, 0);
 		recv_len = recv(s_server, recv_buf, 100, 0);
 		cout << recv_buf << endl;
 		memset(recv_buf, '\0', sizeof(recv_buf));
-		Sleep(1200);
+		Sleep(200);
 	}
-	//å¼ å¼€çˆªå­ IOå…³é—­
+	//ÕÅ¿ª×¦×Ó IO¹Ø±Õ
 	void ExpandClose()
 	{
-		sprintf_s(send_buf, 100, "[d%# IO.Set DOUT(20104),0]", i++);
+		sprintf_s(send_buf, 100, "[%d# IO.Set DOUT(20104),0]", i++);
 		send_len = send(s_server, send_buf, 100, 0);
 		recv_len = recv(s_server, recv_buf, 100, 0);
 		cout << recv_buf << endl;
 		memset(recv_buf, '\0', sizeof(recv_buf));
 	}
-	//æ”¾æ°”ï¼Œå¼ çˆª
+	//·ÅÆø£¬ÕÅ×¦
 	void Expand()
 	{
-		//æ”¾æ°” IO.Set DOUT(20104), 1
-		sprintf_s(send_buf, 100, "[d%# IO.Set DOUT(20104), 1]", i++);
+		//·ÅÆø IO.Set DOUT(20104), 1
+		sprintf_s(send_buf, 100, "[%d# IO.Set DOUT(20104), 1]", i++);
 		send_len = send(s_server, send_buf, 100, 0);
 		recv_len = recv(s_server, recv_buf, 100, 0);
 		cout << recv_buf << endl;
 		memset(recv_buf, '\0', sizeof(recv_buf));
-		Sleep(1000);
+		Sleep(200);
 	}
-	//å¸æ°”ï¼Œæ”¶çˆª
+	//ÎüÆø£¬ÊÕ×¦
 	void Contract()
 	{
-		sprintf_s(send_buf, 100, "[d%# IO.Set DOUT(20103), 1]", i++);
+		sprintf_s(send_buf, 100, "[%d# IO.Set DOUT(20103), 1]", i++);
+		send_len = send(s_server, send_buf, 100, 0);
+		recv_len = recv(s_server, recv_buf, 100, 0);
+		cout << recv_buf << endl;
+		memset(recv_buf, '\0', sizeof(recv_buf));
+		Sleep(300);
+	}
+	//PPBÊ¹ÄÜ
+	void PPB_Enable()
+	{
+		sprintf_s(send_buf, 100, "[%d# PPB.Enable 1,1]", i++);
+		send_len = send(s_server, send_buf, 100, 0);
+		recv_len = recv(s_server, recv_buf, 100, 0);
+		cout << recv_buf << endl;
+		memset(recv_buf, '\0', sizeof(recv_buf));
+	}
+	//PPB¼ÓÔØÎÄ¼ş
+    void PPB_ReadData0()
+    {
+        sprintf_s(send_buf, 100, "[%d# PPB.ReadFile 1,data/serverdata0.txt]", i++);
+        send_len = send(s_server, send_buf, 100, 0);
+        recv_len = recv(s_server, recv_buf, 100, 0);
+        cout << recv_buf << endl;
+        memset(recv_buf, '\0', sizeof(recv_buf));
+        Sleep(200);
+    }
+	void PPB_ReadData1()
+	{
+		sprintf_s(send_buf, 100, "[%d# PPB.ReadFile 1,data/serverdata1.txt]", i++);
+		send_len = send(s_server, send_buf, 100, 0);
+		recv_len = recv(s_server, recv_buf, 100, 0);
+		cout << recv_buf << endl;
+		memset(recv_buf, '\0', sizeof(recv_buf));
+		Sleep(200);
+	}
+    void PPB_ReadData2()
+    {
+        sprintf_s(send_buf, 100, "[%d# PPB.ReadFile 1,data/serverdata2.txt]", i++);
+        send_len = send(s_server, send_buf, 100, 0);
+        recv_len = recv(s_server, recv_buf, 100, 0);
+        cout << recv_buf << endl;
+        memset(recv_buf, '\0', sizeof(recv_buf));
+        Sleep(200);
+    }
+    void PPB_ReadData3()
+    {
+        sprintf_s(send_buf, 100, "[%d# PPB.ReadFile 1,data/serverdata3.txt]", i++);
+        send_len = send(s_server, send_buf, 100, 0);
+        recv_len = recv(s_server, recv_buf, 100, 0);
+        cout << recv_buf << endl;
+        memset(recv_buf, '\0', sizeof(recv_buf));
+        Sleep(200);
+    }
+    void PPB_ReadData4()
+    {
+        sprintf_s(send_buf, 100, "[%d# PPB.ReadFile 1,data/serverdata4.txt]", i++);
+        send_len = send(s_server, send_buf, 100, 0);
+        recv_len = recv(s_server, recv_buf, 100, 0);
+        cout << recv_buf << endl;
+        memset(recv_buf, '\0', sizeof(recv_buf));
+        Sleep(200);
+    }
+	void PPB_ReadData(char* file)
+	{
+		sprintf_s(send_buf, 100, "[%d# PPB.ReadFile 1,%s]", i++, file);
+        printf("Reached PPB_ReadData.\n");
+        printf("%s", file);
+		send_len = send(s_server, send_buf, 100, 0);
+		recv_len = recv(s_server, recv_buf, 100, 0);
+		cout << recv_buf << endl;
+		memset(recv_buf, '\0', sizeof(recv_buf));
+        
+		Sleep(200);
+	}
+	//ÔË¶¯µ½µÚÒ»¸öµã
+	void PPB_FirstPoint()
+	{
+		sprintf_s(send_buf, 100, "[%d# PPB.J2StartPoint 1]", i++);
+		send_len = send(s_server, send_buf, 100, 0);
+		recv_len = recv(s_server, recv_buf, 100, 0);
+		cout << recv_buf << endl;
+		memset(recv_buf, '\0', sizeof(recv_buf));
+		Sleep(200);
+	}
+	//Ö´ĞĞ¹ì¼£¹æ»®µãÎ»
+	void PPB_Run()
+	{
+		sprintf_s(send_buf, 100, "[%d# PPB.Run 1]", i++);
+		send_len = send(s_server, send_buf, 100, 0);
+		recv_len = recv(s_server, recv_buf, 100, 0);
+		cout << recv_buf << endl;
+		memset(recv_buf, '\0', sizeof(recv_buf));
+		Sleep(200);
+	}
+	//ÏÂµç
+	void PowerOff()
+	{
+		sprintf_s(send_buf, 100, "[%d# Robot.PowerEnable 1,0]", i++);
 		send_len = send(s_server, send_buf, 100, 0);
 		recv_len = recv(s_server, recv_buf, 100, 0);
 		cout << recv_buf << endl;
 		memset(recv_buf, '\0', sizeof(recv_buf));
 		Sleep(1000);
 	}
-	//PPBä½¿èƒ½
-	void PPB_Enable()
-	{
-		sprintf_s(send_buf, 100, "[d%# PPB.Enable 1,1]", i++);
-		send_len = send(s_server, send_buf, 100, 0);
-		recv_len = recv(s_server, recv_buf, 100, 0);
-		cout << recv_buf << endl;
-		memset(recv_buf, '\0', sizeof(recv_buf));
-	}
-	//PPBåŠ è½½æ–‡ä»¶
-	void PPB_Read(string filename)
-	{
-		sprintf_s(send_buf, 100, "[d%# PPB.ReadFile 1,%s]", i++,filename);
-		send_len = send(s_server, send_buf, 100, 0);
-		recv_len = recv(s_server, recv_buf, 100, 0);
-		cout << recv_buf << endl;
-		memset(recv_buf, '\0', sizeof(recv_buf));
-		Sleep(1200);
-	}
-	//è¿åŠ¨åˆ°ç¬¬ä¸€ä¸ªç‚¹
-	void PPB_FirstPoint()
-	{
-		sprintf_s(send_buf, 100, "[d%# PPB.J2StartPoint 1]", i++);
-		send_len = send(s_server, send_buf, 100, 0);
-		recv_len = recv(s_server, recv_buf, 100, 0);
-		cout << recv_buf << endl;
-		memset(recv_buf, '\0', sizeof(recv_buf));
-		Sleep(1200);
-	}
-	//æ‰§è¡Œè½¨è¿¹è§„åˆ’ç‚¹ä½
-	void PPB_Run()
-	{
-		sprintf_s(send_buf, 100, "[d%# PPB.Run 1]", i++);
-		send_len = send(s_server, send_buf, 100, 0);
-		recv_len = recv(s_server, recv_buf, 100, 0);
-		cout << recv_buf << endl;
-		memset(recv_buf, '\0', sizeof(recv_buf));
-		Sleep(1200);
-	}
-	//ä¸‹ç”µ
-	void PowerOff()
-	{
-		sprintf_s(send_buf, 100, "[d%# Robot.PowerEnable 1,0]", i++);
-		send_len = send(s_server, send_buf, 100, 0);
-		recv_len = recv(s_server, recv_buf, 100, 0);
-		cout << recv_buf << endl;
-		memset(recv_buf, '\0', sizeof(recv_buf));
-		Sleep(1200);
-	}
-	//æ‰‹åŠ¨æ¨¡å¼
+	//ÊÖ¶¯Ä£Ê½
 	void Manual() 
 	{
-		sprintf_s(send_buf, 100, "[d%# System.Auto 0]", i++);
+		sprintf_s(send_buf, 100, "[%d# System.Auto 0]", i++);
 		send_len = send(s_server, send_buf, 100, 0);
 		recv_len = recv(s_server, recv_buf, 200, 0);
 		cout << recv_buf << endl;
 		memset(recv_buf, '\0', sizeof(recv_buf));
 		Sleep(200);
 	}
-	//è‡ªåŠ¨æ¨¡å¼
+	//×Ô¶¯Ä£Ê½
 	void Auto() 
 	{
-		sprintf_s(send_buf, 100, "[d%# System.Auto 1]", i++);
+		sprintf_s(send_buf, 100, "[%d# System.Auto 1]", i++);
 		send_len = send(s_server, send_buf, 100, 0);
 		recv_len = recv(s_server, recv_buf, 200, 0);
 		cout << recv_buf << endl;
 		memset(recv_buf, '\0', sizeof(recv_buf));
-		Sleep(1200);
+		Sleep(200);
 	}
-	//è½´åæ ‡æ¨¡å¼
+	//Öá×ø±êÄ£Ê½
 	void Frame() 
 	{
-		sprintf_s(send_buf, 100, "[d%# Robot.Frame 1]", i++);
+		sprintf_s(send_buf, 100, "[%d# Robot.Frame 1]", i++);
 		send_len = send(s_server, send_buf, 100, 0);
 		recv_len = recv(s_server, recv_buf, 100, 0);
 		cout << recv_buf << endl;
 		memset(recv_buf, '\0', sizeof(recv_buf));
-		Sleep(1200);
+		Sleep(200);
 	}
-	//è°ƒé€Ÿ
+	//µ÷ËÙ
 	void Speed(int speed)
 	{
-		//è¿åŠ¨é€Ÿåº¦25/100
-		sprintf_s(send_buf, 100, "[d%# Robot.Speed 1, %d]", i++,speed);
+		//ÔË¶¯ËÙ¶È25/100
+		sprintf_s(send_buf, 100, "[%d# Robot.Speed 1, %d]", i++,speed);
 		send_len = send(s_server, send_buf, 100, 0);
 		recv_len = recv(s_server, recv_buf, 100, 0);
 		cout << recv_buf << endl;
 		memset(recv_buf, '\0', sizeof(recv_buf));
-		Sleep(1200);
-		cout << "\nBe ready to hit the EMERGENCY STOP !" << endl;
-		cout << "Press Enter to continue..." << endl;
-		cin.get();
+		Sleep(200);
 	}
 	//
 	void CloseSocket() 
 	{
-		//å…³é—­å¥—æ¥å­—
+		//¹Ø±ÕÌ×½Ó×Ö
 		closesocket(s_server);
-		//é‡Šæ”¾DLLèµ„æº
+		//ÊÍ·ÅDLL×ÊÔ´
 		WSACleanup();
+	}
+
+    void Plan(PosStruct P1, PosStruct P2)
+    {
+        //ÌİĞÍËÙ¶È¹æ»®
+        CHLMotionPlan trajectory1;
+        trajectory1.SetProfile(20, 20, 20);    //vel ¡ã/s£¬ acc ¡ã/s.s, dec ¡ã/s.s  ÉèÖÃÔË¶¯²ÎÊı
+        trajectory1.SetSampleTime(0.001);      //s ÉèÖÃ²ÉÑùÊ±¼ä
+        trajectory1.SetPlanPoints(P1, P2);
+        trajectory1.GetPlanPoints(32);
+        cout << "Plan in joint space done!" << endl;
+        trajectory1.GetPlanPointsCartesian(32);
+        cout << "Plan in world space done!" << endl;
+
+    }
+    void Plan_NotOverwrite(PosStruct P1, PosStruct P2)
+    {
+        //ÌİĞÍËÙ¶È¹æ»®
+        CHLMotionPlan trajectory1;
+        trajectory1.SetProfile(20, 20, 20);    //vel ¡ã/s£¬ acc ¡ã/s.s, dec ¡ã/s.s  ÉèÖÃÔË¶¯²ÎÊı
+        trajectory1.SetSampleTime(0.001);      //s ÉèÖÃ²ÉÑùÊ±¼ä
+        trajectory1.SetPlanPoints(P1, P2);
+        trajectory1.GetPlanPoints(97);
+        cout << "Plan in joint space done!" << endl;
+        trajectory1.GetPlanPointsCartesian(97);
+        cout << "Plan in world space done!" << endl;
+    }
+
+    string getFileName(int id) {
+        char shit[10] = { 0 };
+        string idStr(itoa(id, shit, 10));
+        string filename("data/serverdata" + idStr + ".txt");
+        return filename;
+    }
+
+	void Calculation(PosStruct st, PosStruct ed, vector<string>& nameList) {
+        char file[100];
+        string fileName;
+		// Calculating Safe Points
+		PosStruct stSafe = st;
+		PosStruct edSafe = ed;
+		stSafe.z += 260;
+		edSafe.z += 260;
+		//PPBÊ¹ÄÜ 
+		PPB_Enable();
+		// ¹ì¼£¹æ»®
+		Plan(stSafe, st);
+        fileName = getFileName(dataID);
+        cout << fileName << endl;
+
+        nameList.push_back(fileName);
+        strcpy(file, fileName.c_str());
+        printf("%s\n", file+5);
+		FtpControl::Upload("192.168.10.101", "data", "dataPlanInCartesian.txt", file+5);
+		cout << "File"<<dataID++<<" has been sent to server..." << endl;
+        
+
+		/*suck*/
+
+		Plan(st, stSafe);
+        fileName = getFileName(dataID);
+        nameList.push_back(fileName);
+        strcpy(file, fileName.c_str());
+        FtpControl::Upload("192.168.10.101", "data", "dataPlanInCartesian.txt", file+5);
+        cout << "File" << dataID++ << " has been sent to server..." << endl;
+
+		Plan(edSafe, ed);
+        fileName = getFileName(dataID);
+        nameList.push_back(fileName);
+        strcpy(file, fileName.c_str());
+        FtpControl::Upload("192.168.10.101", "data", "dataPlanInCartesian.txt", file+5);
+        cout << "File" << dataID++ << " has been sent to server..." << endl;
+
+		/* expand */
+		Plan(ed, edSafe);
+        fileName = getFileName(dataID);
+        nameList.push_back(fileName);
+        strcpy(file, fileName.c_str());
+        FtpControl::Upload("192.168.10.101", "data", "dataPlanInCartesian.txt", file+5);
+        cout << "File" << dataID++ << " has been sent to server..." << endl;
+
+		cout << "Planning and Upload Completed!" << endl;
+		/* Planning and Upload Completed ! */
+	}
+	void Palletize(PosStruct st, PosStruct ed, vector<string>& nameList) {
+		/*******************************************************************************/
+		//µÚ0¶Î£º´óÇø°²È«µãµ½È¡ÁÏµã
+        char file[100];
+        strcpy(file, nameList.at(readDataID++).c_str());
+		PPB_ReadData(file);
+		Speed(50);
+		cout << "\nBe ready to hit the EMERGENCY STOP !\n" << endl;
+		//cout << "Press Enter to continue..." << endl;
+		//cin.get();
+		//µ½°²È«µã 
+		PPB_FirstPoint();
+		Sleep(200);
+		// ÏÂÈ¥È¡ÁÏ
+		PPB_Run();
+		Sleep(200);
+		cout << "Moving to Picking Point..." << endl;
+
+		/*ÎüÆø, ×¥È¡*/
+		ExpandClose();
+		Contract();
+		cout << "Picking..." << endl;
+
+		//µÚ1¶Î£º»ØÈ¡ÁÏ°²È«µã
+        strcpy(file, nameList.at(readDataID++).c_str());
+        PPB_ReadData(file);
+		PPB_FirstPoint();
+		Sleep(200);
+		PPB_Run();
+		cout << "Moving back to Pick Point and ready to move away..." << endl;
+		Sleep(300);
+
+		//µÚ3¶Î£º·ÅÁÏ°²È«µãµ½·ÅÁÏµã
+        strcpy(file, nameList.at(readDataID++).c_str());
+        PPB_ReadData(file);
+		PPB_FirstPoint();
+		Sleep(200);
+		PPB_Run();
+		cout << "Moving to Stashing Point..." << endl;
+		Sleep(200);
+
+		/*Âë¶â*/
+		ExpandClose();
+		Expand();
+		cout << "Unloading..." << endl;
+
+
+		//µÚ4¶Î: »ØÈ¡ÁÏ°²È«µã´ıÃü
+        strcpy(file, nameList.at(readDataID++).c_str());
+        PPB_ReadData(file);
+		PPB_FirstPoint();
+		Sleep(200);
+		PPB_Run();
+		cout << "Moving bakc to Safe Point..." << endl;
+		Sleep(400);
+		/*********************************************************************************/
 	}
 }
